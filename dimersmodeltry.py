@@ -1060,7 +1060,7 @@ s=samples.numpy()
 print(s)
 sample_100_dominos=torch.tensor(s)
 print(sample_100_dominos)
-torch.save(sample_100_dominos, 'sample_100_dominos14x14checkfinal.pt')
+torch.save(sample_100_dominos, f'sampledominos_{Lx}_{Ly}_{ns}.pt')
 
 
 
