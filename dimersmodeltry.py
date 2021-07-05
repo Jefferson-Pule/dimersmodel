@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import torch as torch
-
+import sys
 
 # Create a class
 class VariationalMonteCarlo(tf.keras.Model):
@@ -1018,15 +1018,17 @@ class VariationalMonteCarlo(tf.keras.Model):
 
 
 # Hamiltonian parameters
-Lx = 14      # Linear size in x direction
-Ly = 14      # Linear size in y direction
+
+#Lx = 14      # Linear size in x direction
+Lx = int(sys.argv[1])      # Linear size in x direction
+Ly = int(sys.argv[2])      # Linear size in y direction
 N = Lx*Ly   # Total number of spins 
 J = 1.0     # Strenght  
 T = 2.5     # Temperature
 # RNN-VMC parameters
 lr = 0.001     # learning rate of Adam optimizer
 nh = 10        # Number of hidden units in the GRU cell
-ns = 100       # Number of samples used to approximate the energy at each step
+ns = int(sys.argv[3])       # Number of samples used to approximate the energy at each step
 epochs = 1000  # Training iterations
 seed = 1234    # Seed of RNG
 vmc = VariationalMonteCarlo(Lx,Ly,J,T,ns,nh,lr,epochs,seed)
