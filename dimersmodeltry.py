@@ -1018,8 +1018,8 @@ class VariationalMonteCarlo(tf.keras.Model):
 
 
 # Hamiltonian parameters
-Lx = 12      # Linear size in x direction
-Ly = 12      # Linear size in y direction
+Lx = 14      # Linear size in x direction
+Ly = 14      # Linear size in y direction
 N = Lx*Ly   # Total number of spins 
 J = 1.0     # Strenght  
 T = 2.5     # Temperature
@@ -1058,7 +1058,7 @@ s=samples.numpy()
 print(s)
 sample_100_dominos=torch.tensor(s)
 print(sample_100_dominos)
-torch.save(sample_100_dominos, 'sample_100_dominos12x12checkfinal.pt')
+torch.save(sample_100_dominos, 'sample_100_dominos14x14checkfinal.pt')
 
 
 
