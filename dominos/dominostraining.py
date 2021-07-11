@@ -1105,6 +1105,7 @@ while epoch < epochs+1:
 
 vmc,optimizer,epoch, checkpoint_manager=create_or_restore_training_state(current_directory)
 
+import torch as torch
 s=samples.numpy()
 print(s)
 sample_dominos=torch.tensor(s)
