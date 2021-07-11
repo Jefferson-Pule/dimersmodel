@@ -2,13 +2,14 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import sys
+import logging
 
 # Hamiltonian parameters
 Lx = int(sys.argv[1])      # Linear size in x direction
 Ly = int(sys.argv[2])      # Linear size in y direction
 N = Lx*Ly                  # Total number of atoms 
 J = 1.0                    # Strenght  
-T = int(sys.argv[3])       # Temperature
+T = sys.argv[3]       # Temperature
 # RNN-VMC parameters
 lr = 0.001                 # learning rate of Adam optimizer
 nh = int(sys.argv[4])      # Number of hidden units in the GRU cell
@@ -1030,7 +1031,7 @@ def create_or_restore_training_state(checkpoint_dir):
 #Training Step
 
 #Logging information
-logging.basicConfig(filename='information.log', level=logging.INFO, format='%(asctime)s:%(message)s', force=True)
+logging.basicConfig(filename='information.log', level=logging.INFO, format='%(asctime)s:%(message)s')
 
 #Look for checkpoints
 vmc,optimizer,epoch, checkpoint_manager=create_or_restore_training_state(checkpoint_dir)
@@ -1110,7 +1111,7 @@ s=samples.numpy()
 print(s)
 sample_dominos=torch.tensor(s)
 print(sample_dominos)
-torch.save(sample_dominos, f'sampledominos_{Lx}_{Ly}_{ns}.pt')
+torch.save(sample_dominos, f'sampledominos_{Lx}_{Ly}_{ns}.pt' )
     
 
 
