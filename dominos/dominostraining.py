@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
 import sys
 import logging
 
@@ -9,7 +8,7 @@ Lx = int(sys.argv[1])      # Linear size in x direction
 Ly = int(sys.argv[2])      # Linear size in y direction
 N = Lx*Ly                  # Total number of atoms 
 J = 1.0                    # Strenght  
-T = sys.argv[3]       # Temperature
+T = float(sys.argv[3])       # Temperature
 # RNN-VMC parameters
 lr = 0.001                 # learning rate of Adam optimizer
 nh = int(sys.argv[4])      # Number of hidden units in the GRU cell
@@ -379,10 +378,15 @@ class VariationalMonteCarlo(tf.keras.Model):
 
     def Prob_Changer(self,j,Check):
 
-        indices=tf.constant([[0,j]])
+        indices=[[0,j]]
+        print("indices before loop",indices)
 
-        for s in range(tf.shape(Check)[0]-1):
-            indices=tf.concat([indices,tf.constant([[s+1,j]])], axis=0)
+
+        for s in range(self.ns-1):
+            print("s",s,"j",j)
+            indices.append([s+1,j])
+        print("indices after loop",indices)
+        indices=tf.constant(indices, dtype=tf.int32)
         indices=tf.reshape(indices, shape=(tf.shape(indices)[0],1,2))
         Changer=tf.gather_nd(Check, indices)
         Changer=tf.math.divide_no_nan(Changer, Changer)
@@ -398,7 +402,7 @@ class VariationalMonteCarlo(tf.keras.Model):
         sample_checker_1=tf.constant([[direction_being_check]])
         sample_checker=sample_checker_1
 #         print("sample_checker before",sample_checker)
-        for i in range(tf.shape(Check)[0]-1):
+        for i in range(self.ns-1):
             sample_checker=tf.concat([sample_checker,sample_checker_1], axis=0)
 
         sample_checker=tf.reshape(sample_checker, shape=(tf.shape(Check)[0],1))
@@ -414,9 +418,8 @@ class VariationalMonteCarlo(tf.keras.Model):
         Look_for_sum_one=tf.equal(Sum_Check, 1)
 
         index=tf.cast(tf.where(Look_for_sum_one), dtype=tf.int32)
-#             print(j,"index", index)
-
-        while tf.shape(index)[0]!=0:
+        
+        while index.get_shape()[0]!=0 and index.get_shape()[0]!=None:
 
             inpt=tf.gather_nd(Control_checker,index)
 #                 print("inpt",inpt)
@@ -457,7 +460,7 @@ class VariationalMonteCarlo(tf.keras.Model):
                             inpts=tf.math.multiply(inpts, no_change)
                         else:
                             inpts=tf.concat([inpts, no_change], axis=0)
-                inpts=tf.reshape(inpts, shape=(tf.shape(Check)[0],4))
+                inpts=tf.reshape(inpts, shape=(self.ns,4))
 
                 inpts=tf.cast(tf.reshape(tf.map_fn(lambda x: self.from_Check_to_direction(x), inpts),shape=(self.ns,1)),dtype=tf.int32)
 
@@ -528,8 +531,6 @@ class VariationalMonteCarlo(tf.keras.Model):
         return Control_Boundaries
 
 
-        
-    @tf.function
     
     # Creates a nsamples with N entries.
         
@@ -562,6 +563,7 @@ class VariationalMonteCarlo(tf.keras.Model):
                 Only_check_for_connection_if_1=1
                 
             if Only_check_for_connection_if_1==1:
+    
                 Control_connection=tf.ones(shape=tf.shape(Check), dtype=tf.float32)
                 for direction in range(4):
                     Check_for_connections=self.Check_for_boundaries(direction,j,Check)
@@ -635,7 +637,11 @@ class VariationalMonteCarlo(tf.keras.Model):
 
             index=tf.cast(tf.where(Look_for_sum_one), dtype=tf.int32)
             
-            while tf.shape(index)[0]!=0:
+            print("index before while", index)
+
+            print("Value ",index.get_shape()[0])
+            
+            while index.get_shape()[0]!=0 and index.get_shape()[0]!=None:
 
                 inpt=tf.gather_nd(Check,index)
 #                 print("inpt",inpt)
@@ -662,6 +668,9 @@ class VariationalMonteCarlo(tf.keras.Model):
 #                     print("number_of_sample",number_of_sample)
                     inpts=tf.ones(shape=(4))
                     no_change=tf.zeros(shape=(4))
+
+                    print("index:",index)
+                    print("number_of_sample", number_of_sample)
 
                     for n in range(nsamples):
                         if n in number_of_sample:
