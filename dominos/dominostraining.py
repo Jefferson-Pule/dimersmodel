@@ -1048,7 +1048,7 @@ vmc.optimizer=optimizer
 
 while epoch < epochs+1:
     energy = open("energy.txt","a")
-    free=open("free.txt", "w")
+    free=open("free.txt", "a")
     variance = open("variance.txt","a")
     print(epoch)
     count=0
@@ -1113,7 +1113,11 @@ while epoch < epochs+1:
 
     epoch.assign_add(1)
 
-vmc,optimizer,epoch, checkpoint_manager=create_or_restore_training_state(current_directory)
+global_rng_state = tf.random.experimental.get_global_generator().state
+checkpoint = tf.train.Checkpoint(epoch=epoch,optimizer=optimizer,vmc=vmc, global_rng_state=global_rng_state)
+checkpoint_manager = tf.train.CheckpointManager(checkpoint,current_dir,max_to_keep=3)
+path=checkpoint_manager.save()
+logging.info("Epoch {}, Training state saved at {}".format(int(epoch.numpy()),path))
 
 import torch as torch
 s=samples.numpy()
