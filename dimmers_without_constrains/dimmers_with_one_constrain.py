@@ -3,6 +3,7 @@ import numpy as np
 import logging
 import time 
 import sys
+import os
 
 #Hamiltonian parameters
 Lx=int(sys.argv[1])
@@ -21,6 +22,7 @@ seed=1234
 #Directories
 checkpoint_dir=sys.argv[7]  #Checkpoints directory
 current_dir=sys.argv[8]	    #Current directory
+os.chdir(current_dir)
 
 
 # Create Model
@@ -132,7 +134,7 @@ class VariationalMonteCarlo(tf.keras.Model):
             
             probs = self.dense(rnn_output)
 #             print(j,"probs before change",probs)
-            print(Check_for_only_one)
+#            print(Check_for_only_one)
             prob_changer=self.prob_changer(j,Check_for_only_one)
             new_probs=tf.math.multiply(prob_changer,probs)
             # Normalization 
@@ -197,7 +199,7 @@ class VariationalMonteCarlo(tf.keras.Model):
         new_probs    =tf.math.multiply(probs, self.saveconstrains)
         sum_probs=tf.reshape(tf.reduce_sum(new_probs,axis=2), shape=(self.ns,self.N,1))  
         probs=tf.math.divide_no_nan(new_probs,sum_probs)
-        print("probs in logpsi",probs)
+#        print("probs in logpsi",probs)
         log_probs   = tf.reduce_sum(tf.multiply(tf.math.log(1e-10+probs),tf.one_hot(samples,depth=self.K)),axis=2)
 
         return tf.reduce_sum(log_probs,axis=1)
@@ -536,16 +538,15 @@ open("allt_{}_{}x{}x{}_{}.txt".format(nh,Lx,Ly,ns,T), "a") as f:
         
         #Add one to epoch
         epoch.assign_add(1)
-	
 	#Print several samples
 
-        print("samples")
+        print("samples", file=f)
         count=0
         for i in samples:
             if count%2==0:
-                print(i)
+                print(i, file=f)
             count+=1
-        print("end of samples")
+        print("end of samples", file=f)
         
 #Save last checkpoint in current directory
 
@@ -558,7 +559,7 @@ logging.info("Epoch {}, Training state saved at {}".format(int(epoch.numpy()),pa
 import torch as torch
 s=samples.numpy()
 sample_dimers=torch.tensor(s)
-torch.save(sample_dimers, f'samples_{nh}_{Lx}x{Ly}x{ns}_{T}_{epoch}.pt' )
+torch.save(sample_dimers, f'samples_nh={nh}_size={Lx}x{Ly}x{ns}_T={T}_epoch={epoch.numpy()-1}.pt' )
 
 
   
