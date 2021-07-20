@@ -451,7 +451,7 @@ def create_or_restore_training_state(checkpoint_dir):
 
 #Logging information
 
-logging.basicConfig(filename='information.log', level=logging.INFO, format='%(asctime)s:%(message)s', force=True)
+logging.basicConfig(filename='information_for_T={}.log'.format(T), level=logging.INFO, format='%(asctime)s:%(message)s', force=True)
 
 #Look or load for checkpoints 
 
@@ -461,13 +461,13 @@ print("Running in checkpoint directory",checkpoint_dir)
 
 # Training Step
 
-with open("loss_{}_{}x{}x{}_{}.txt".format(nh,Lx,Ly,ns,T),"a") as Loss,\
-open("ener_{}_{}x{}x{}_{}.txt".format(nh,Lx,Ly,ns,T),"a") as energy,\
-open("free_{}_{}x{}x{}_{}.txt".format(nh,Lx,Ly,ns,T), "a") as free,\
-open("vari_{}_{}x{}x{}_{}.txt".format(nh,Lx,Ly,ns,T),"a") as variance,\
-open("bdsb_{}_{}x{}x{}_{}.txt".format(nh,Lx,Ly,ns,T), "a") as bdsb,\
-open("bpsb_{}_{}x{}x{}_{}.txt".format(nh,Lx,Ly,ns,T), "a") as bpsb,\
-open("allt_{}_{}x{}x{}_{}.txt".format(nh,Lx,Ly,ns,T), "a") as f:
+with open("loss_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T),"a") as Loss,\
+open("ener_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T),"a") as energy,\
+open("free_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T), "a") as free,\
+open("vari_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T),"a") as variance,\
+open("bdsb_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T), "a") as bdsb,\
+open("bpsb_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T), "a") as bpsb,\
+open("allt_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T), "a") as f:
 
     print("Num GPUs Acailable", len(tf.config.list_physical_devices('GPU')), file=f) 
     print(f"Running for size={Lx}x{Ly} ns={ns} nh={nh} and epochs={epochs}", file=f)        
@@ -550,11 +550,11 @@ open("allt_{}_{}x{}x{}_{}.txt".format(nh,Lx,Ly,ns,T), "a") as f:
         
 #Save last checkpoint in current directory
 
-global_rng_state = tf.random.experimental.get_global_generator().state
-checkpoint = tf.train.Checkpoint(epoch=epoch,optimizer=optimizer,vmc=vmc, global_rng_state=global_rng_state)
-checkpoint_manager = tf.train.CheckpointManager(checkpoint,current_dir,max_to_keep=3)
-path=checkpoint_manager.save()
-logging.info("Epoch {}, Training state saved at {}".format(int(epoch.numpy()),path))
+#global_rng_state = tf.random.experimental.get_global_generator().state
+#checkpoint = tf.train.Checkpoint(epoch=epoch,optimizer=optimizer,vmc=vmc, global_rng_state=global_rng_state)
+#checkpoint_manager = tf.train.CheckpointManager(checkpoint,current_dir,max_to_keep=3)
+#path=checkpoint_manager.save()
+#logging.info("Epoch {}, Training state saved at {}".format(int(epoch.numpy()),path))
 
 import torch as torch
 s=samples.numpy()
