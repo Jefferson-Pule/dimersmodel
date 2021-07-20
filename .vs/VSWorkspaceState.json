@@ -1,8 +1,8 @@
 {
   "ExpandedNodes": [
     "",
-    "\\dominos"
+    "\\dimmers_without_constrains"
   ],
-  "SelectedNode": "\\dominos\\dominostraining.py",
+  "SelectedNode": "\\dimmers_without_constrains\\dimmers_with_one_constrain.py",
   "PreviewInSolutionExplorer": false
 }
