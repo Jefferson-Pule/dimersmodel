@@ -468,6 +468,7 @@ while T>=0.5:
     open("vari_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T),"a") as variance,\
     open("bdsb_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T), "a") as bdsb,\
     open("bpsb_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T), "a") as bpsb,\
+    open("errors_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T), "a") as erro,\
     open("allt_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T), "a") as f:
 
         print("Num GPUs Acailable", len(tf.config.list_physical_devices('GPU')), file=f) 
@@ -511,6 +512,7 @@ while T>=0.5:
             avg_E = np.mean(energies)/float(N)
             avg_F = np.mean(free_energies)/float(N)
             var_E = np.var(energies)/float(N)
+	    avg_error=np.tf.math.reduce_mean(errors)
         
             #Save data in files 
         
@@ -531,6 +533,8 @@ while T>=0.5:
 
             np.savetxt(Loss,np.atleast_1d(loss))
             logging.info("Epoch {}, Variance saved".format(int(epoch.numpy())))
+            np.savetxt(erro, np.atleast_1d(avg_error))
+            logging.info("Epoch {}, error saved".format(int(epoch.numpy())))
 
         
             #Save Check point 
