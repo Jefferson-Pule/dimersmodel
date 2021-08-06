@@ -212,10 +212,10 @@ class VariationalMonteCarlo(tf.keras.Model):
         eloc = tf.zeros(shape=[tf.shape(samples)[0]],dtype=tf.float32)
         # Adding Parallel Horizontal
         for n in range(len(self.horizontal)):
-            eloc += J * tf.cast(samples[:,self.horizontal[n][0]]*samples[:,self.horizontal[n][1]],tf.float32)
+            eloc += self.J * tf.cast(samples[:,self.horizontal[n][0]]*samples[:,self.horizontal[n][1]],tf.float32)
         #Adding Parallel Vertical
         for n in range(len(self.vertical)):
-            eloc += J * tf.cast(samples[:,self.vertical[n][0]]*samples[:,self.vertical[n][1]],tf.float32)
+            eloc += self.J * tf.cast(samples[:,self.vertical[n][0]]*samples[:,self.vertical[n][1]],tf.float32)
         return eloc
     
 #    @tf.function
@@ -491,7 +491,7 @@ while T>=0.5:
                 errors=vmc.number_of_errors(samples)
                 print("erros in each sample",errors, file=f)
                 print("erros av", tf.stop_gradient(tf.math.reduce_mean(errors)), file=f)
-                errors=tf.math.multiply(1000,errors)
+                errors=tf.math.multiply(-3,errors)
                 Free_energy=tf.math.add(eloc, tf.math.scalar_mul(T, logpsi))
                 Free_mean=tf.reduce_mean(Free_energy)
                 loss = tf.reduce_mean(tf.multiply(logpsi,tf.add(tf.stop_gradient(errors),tf.stop_gradient(Free_energy-Free_mean))))
