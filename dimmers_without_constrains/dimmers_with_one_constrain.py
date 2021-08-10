@@ -491,10 +491,17 @@ open("allt_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T), "a") as f:
             errors=vmc.number_of_errors(samples)
             print("erros in each sample",errors, file=f)
             print("erros av", tf.stop_gradient(tf.math.reduce_mean(errors)), file=f)
-            errors=tf.math.multiply(-3,errors)
+#            errors=tf.math.multiply(50,errors)
+            errors_factor=tf.random.uniform(shape=(tf.shape(errors)),minval=50, maxval=51)
+            print("erros factor",errors_factor, file=f)
+            print("eloc", eloc, file=f)
+            eloc=tf.math.add(tf.math.multiply(errors_factor, errors), eloc)
+            print("c*errors+eloc",eloc, file=f)
             Free_energy=tf.math.add(eloc, tf.math.scalar_mul(T, logpsi))
+            print("free energy", Free_energy, file=f)
             Free_mean=tf.reduce_mean(Free_energy)
-            loss = tf.reduce_mean(tf.multiply(logpsi,tf.add(tf.stop_gradient(errors),tf.stop_gradient(Free_energy-Free_mean))))
+            print("free energy mean", Free_mean, file=f)
+            loss = tf.reduce_mean(tf.multiply(logpsi,tf.stop_gradient(Free_energy-Free_mean)))
             print("loss",loss, file=f)
             print("#################################################################################################", file=f)
         # Compute the gradients
@@ -511,7 +518,7 @@ open("allt_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T), "a") as f:
         avg_E = np.mean(energies)/float(N)
         avg_F = np.mean(free_energies)/float(N)
         var_E = np.var(energies)/float(N)
-        avg_error=np.tf.math.reduce_mean(errors)
+        avg_error=tf.math.reduce_mean(errors).numpy()
         #Save data in files 
         
         np.savetxt(bdsb,np.atleast_1d(bind_d_symmetry_breaking))

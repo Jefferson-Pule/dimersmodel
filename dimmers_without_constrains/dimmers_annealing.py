@@ -489,14 +489,30 @@ while T>=0.5:
             with tf.GradientTape() as tape:
                 logpsi = vmc.logpsi(samples)
                 eloc = vmc.localenergy(samples)
+                #errors=vmc.number_of_errors(samples)
+                #print("erros in each sample",errors, file=f)
+                #print("erros av", tf.stop_gradient(tf.math.reduce_mean(errors)), file=f)
+                #errors=tf.math.multiply(-3,errors)
+                #Free_energy=tf.math.add(eloc, tf.math.scalar_mul(T, logpsi))
+                #Free_mean=tf.reduce_mean(Free_energy)
+                #loss = tf.reduce_mean(tf.multiply(logpsi,tf.add(tf.stop_gradient(errors),tf.stop_gradient(Free_energy-Free_mean))))
+                #print("loss",loss, file=f)
                 errors=vmc.number_of_errors(samples)
                 print("erros in each sample",errors, file=f)
                 print("erros av", tf.stop_gradient(tf.math.reduce_mean(errors)), file=f)
-                errors=tf.math.multiply(-3,errors)
+    #            errors=tf.math.multiply(50,errors)
+                errors_factor=tf.random.uniform(shape=(tf.shape(errors)),minval=50, maxval=51)
+                print("erros factor",errors_factor, file=f)
+                print("eloc", eloc, file=f)
+                eloc=tf.math.add(tf.math.multiply(errors_factor, errors), eloc)
+                print("c*errors+eloc",eloc, file=f)
                 Free_energy=tf.math.add(eloc, tf.math.scalar_mul(T, logpsi))
+                print("free energy", Free_energy, file=f)
                 Free_mean=tf.reduce_mean(Free_energy)
-                loss = tf.reduce_mean(tf.multiply(logpsi,tf.add(tf.stop_gradient(errors),tf.stop_gradient(Free_energy-Free_mean))))
+                print("free energy mean", Free_mean, file=f)
+                loss = tf.reduce_mean(tf.multiply(logpsi,tf.stop_gradient(Free_energy-Free_mean)))
                 print("loss",loss, file=f)
+
                 print("#################################################################################################", file=f)
             # Compute the gradients
             gradients = tape.gradient(loss, vmc.trainable_variables)
@@ -512,7 +528,7 @@ while T>=0.5:
             avg_E = np.mean(energies)/float(N)
             avg_F = np.mean(free_energies)/float(N)
             var_E = np.var(energies)/float(N)
-	    avg_error=np.tf.math.reduce_mean(errors)
+            avg_error=tf.math.reduce_mean(errors).numpy()
         
             #Save data in files 
         
@@ -533,6 +549,7 @@ while T>=0.5:
 
             np.savetxt(Loss,np.atleast_1d(loss))
             logging.info("Epoch {}, Variance saved".format(int(epoch.numpy())))
+
             np.savetxt(erro, np.atleast_1d(avg_error))
             logging.info("Epoch {}, error saved".format(int(epoch.numpy())))
 
