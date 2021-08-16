@@ -1,7 +1,9 @@
-import numpy as np
 import tensorflow as tf
-import sys
+import numpy as np
 import logging
+import time 
+import sys
+import os
 
 # Hamiltonian parameters
 Lx = int(sys.argv[1])      # Linear size in x direction
@@ -11,14 +13,14 @@ J = 1.0                    # Strenght
 T = float(sys.argv[3])       # Temperature
 # RNN-VMC parameters
 lr = 0.001                 # learning rate of Adam optimizer
-nh = int(sys.argv[4])      # Number of hidden units in the GRU cell
-ns = int(sys.argv[5])      # Number of samples used to approximate the energy at each step
-epochs = int(sys.argv[6])  # Training iterations
-seed = 1234                # Seed of RNG
+nh = int(sys.argv[6])      # Number of hidden units in the GRU cell
+ns = int(sys.argv[4])      # Number of samples used to approximate the energy at each step
+epochs = int(sys.argv[5])  # Training iterations
+seed = 1234                # Seed of RNN
 #Directories
 checkpoint_dir=sys.argv[7]  #Checkpoints directory
 current_dir=sys.argv[8]	    #Current directory
-
+os.chdir(current_dir)
 # Create a class
 class VariationalMonteCarlo(tf.keras.Model):
     # Build our Model
@@ -379,13 +381,13 @@ class VariationalMonteCarlo(tf.keras.Model):
     def Prob_Changer(self,j,Check):
 
         indices=[[0,j]]
-        print("indices before loop",indices)
+#        print("indices before loop",indices)
 
 
         for s in range(self.ns-1):
-            print("s",s,"j",j)
+            #print("s",s,"j",j)
             indices.append([s+1,j])
-        print("indices after loop",indices)
+        #print("indices after loop",indices)
         indices=tf.constant(indices, dtype=tf.int32)
         indices=tf.reshape(indices, shape=(tf.shape(indices)[0],1,2))
         Changer=tf.gather_nd(Check, indices)
@@ -586,7 +588,7 @@ class VariationalMonteCarlo(tf.keras.Model):
             #Renormalization
             sum_probs=tf.reshape(tf.reduce_sum(new_prob,axis=2), shape=(nsamples,1,1))  
             probs=tf.math.divide_no_nan(new_prob,sum_probs)
-            print(j,"probs after change",probs)
+#            print(j,"probs after change",probs)
             log_probs = tf.reshape(tf.math.log(1e-10+probs),[nsamples,self.K])
             
             #Save constrains 
@@ -600,7 +602,7 @@ class VariationalMonteCarlo(tf.keras.Model):
 #             print(j," saveconstrains",self.saveconstrains)
             # Sample
             sample = tf.random.categorical(log_probs,num_samples=1)
-            print(j,"sample",sample)
+#            print(j,"sample",sample)
             sample = tf.cast(sample,dtype=tf.int32 )
 	#####################################################################################
             Control_sample_selection=self.control(j, sample,"True")
@@ -637,9 +639,9 @@ class VariationalMonteCarlo(tf.keras.Model):
 
             index=tf.cast(tf.where(Look_for_sum_one), dtype=tf.int32)
             
-            print("index before while", index)
+#            print("index before while", index)
 
-            print("Value ",index.get_shape()[0])
+#            print("Value ",index.get_shape()[0])
             
             while index.get_shape()[0]!=0 and index.get_shape()[0]!=None:
 
@@ -669,8 +671,8 @@ class VariationalMonteCarlo(tf.keras.Model):
                     inpts=tf.ones(shape=(4))
                     no_change=tf.zeros(shape=(4))
 
-                    print("index:",index)
-                    print("number_of_sample", number_of_sample)
+#                    print("index:",index)
+#                    print("number_of_sample", number_of_sample)
 
                     for n in range(nsamples):
                         if n in number_of_sample:
@@ -714,7 +716,7 @@ class VariationalMonteCarlo(tf.keras.Model):
             
         return samples, logP
     
-    @tf.function
+#    @tf.function
     
     def logpsi(self,samples):
         # Shift data
@@ -730,21 +732,21 @@ class VariationalMonteCarlo(tf.keras.Model):
         sum_probs=tf.reshape(tf.reduce_sum(new_prob,axis=2), shape=(self.ns,self.N,1))  
         probs=tf.math.divide_no_nan(new_prob,sum_probs)
 
-        print("probs in lopsi", probs)
+#        print("probs in lopsi", probs)
         log_probs   = tf.reduce_sum(tf.multiply(tf.math.log(1e-10+probs),tf.one_hot(samples,depth=self.K)),axis=2)
 
         return tf.reduce_sum(log_probs,axis=1) 
 
-    @tf.function
+#    @tf.function
 
     def localenergy(self,samples):
         eloc = tf.zeros(shape=[tf.shape(samples)[0]],dtype=tf.float32)
         # Adding Parallel Horizontal
         for n in range(len(self.horizontal)):
-            eloc += J * tf.cast(samples[:,self.horizontal[n][0]]*samples[:,self.horizontal[n][1]],tf.float32)
+            eloc += self.J * tf.cast(samples[:,self.horizontal[n][0]]*samples[:,self.horizontal[n][1]],tf.float32)
         #Adding Parallel Vertical
         for n in range(len(self.vertical)):
-            eloc += J * tf.cast(samples[:,self.vertical[n][0]]*samples[:,self.vertical[n][1]],tf.float32)
+            eloc += self.J * tf.cast(samples[:,self.vertical[n][0]]*samples[:,self.vertical[n][1]],tf.float32)
         return eloc
 
     def from_Check_to_direction(self,Check_input):
@@ -999,6 +1001,44 @@ class VariationalMonteCarlo(tf.keras.Model):
 
         return ans
 
+# Binding Symmetries
+
+def DSB(samples):
+    dsb=tf.zeros(shape=(vmc.ns), dtype=tf.int32)
+    N=vmc.Lx*vmc.Ly
+    for n in range(2*N):
+        if n%2==0:
+            dsb+=samples[:,n]
+        else:
+            dsb-=samples[:,n]
+    return 1/N*tf.cast(dsb,dtype=tf.float64)
+def PSB(samples):
+    psb=tf.zeros(shape=(vmc.ns), dtype=tf.int32)
+    for vertical in vmc.vertical:
+        
+        psb-=samples[:,vertical[0]]*samples[:,vertical[1]]
+        
+    for horizontal in vmc.horizontal:
+        
+        psb+=samples[:,horizontal[0]]*samples[:,horizontal[1]]
+    
+    return psb
+
+def BDSB(samples):
+    dsb=DSB(samples)
+    dsb4=tf.math.pow(dsb,4)
+    dsb2=tf.math.pow(dsb,2)
+    dsb4_mean=tf.math.reduce_mean(dsb4)
+    dsb2_mean=tf.math.reduce_mean(dsb2)
+    return 1-tf.math.divide(dsb4_mean, 3*tf.math.pow(dsb2_mean,2))
+
+def BPSB(samples):
+    psb=PSB(samples)
+    psb4=tf.math.pow(psb,4)
+    psb2=tf.math.pow(psb,2)
+    psb4_mean=tf.math.reduce_mean(psb4)
+    psb2_mean=tf.math.reduce_mean(psb2)
+    return 1-tf.math.divide(psb4_mean, 3*tf.math.pow(psb2_mean,2))
 
 def create_or_restore_training_state(checkpoint_dir):
     vmc=VariationalMonteCarlo(Lx,Ly,J,T,ns,nh,lr,epochs,seed)
@@ -1045,73 +1085,115 @@ logging.basicConfig(filename='information.log', level=logging.INFO, format='%(as
 #Look for checkpoints
 vmc,optimizer,epoch, checkpoint_manager=create_or_restore_training_state(checkpoint_dir)
 vmc.optimizer=optimizer
+print("Running in checkpoint directory",checkpoint_dir)
 
-while epoch < epochs+1:
-    energy = open("energy.txt","a")
-    free=open("free.txt", "a")
-    variance = open("variance.txt","a")
-    print(epoch)
-    count=0
-    samples, _ = vmc.sample(ns)
-    samples_in_dimers=vmc.Transform_to_dimers(samples)
-    print("samples", samples)
-    print("in dimers",samples_in_dimers)
-    print("##############Sample Generator finished################")
-    vmc.Check_sample_dimers(samples_in_dimers)
-    Check_correctness=vmc.Check_dimers
-    print("Check_correctness",Check_correctness)
+with open("loss_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T),"a") as Loss,\
+open("ener_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T),"a") as energy,\
+open("free_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T), "a") as free,\
+open("vari_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T),"a") as variance,\
+open("bdsb_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T), "a") as bdsb,\
+open("bpsb_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T), "a") as bpsb,\
+open("errors_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T), "a") as erro,\
+open("allt_nh_{}_size_{}x{}x{}_T_{}.txt".format(nh,Lx,Ly,ns,T), "a") as f:
+
+    print("Num GPUs Acailable", len(tf.config.list_physical_devices('GPU')), file=f) 
+    print(f"Running for size={Lx}x{Ly} ns={ns} nh={nh} and epochs={epochs}", file=f)
+    while epoch < epochs+1:
+        logging.info("Epoch {}, initiated".format(int(epoch.numpy())))
+        print("epoch ",epoch.numpy(),file=f) 
+        start_time=time.time()
+        count=0
+        samples, _ = vmc.sample(ns)
+        samples_in_dimers=vmc.Transform_to_dimers(samples)
+        print("time to sample",time.time()-start_time, file=f)
+
+        Bind_d_symmetry_breaking=BDSB(samples_in_dimers)
+        Bind_p_symmetry_breaking=BPSB(samples_in_dimers)
+        print("bdsd=",Bind_d_symmetry_breaking, file=f)
+        print("bpsd=",Bind_p_symmetry_breaking, file=f)
+
+        print("samples", samples)
+        print("in dimers",samples_in_dimers)
+        print("##############Sample Generator finished################")
+        vmc.Check_sample_dimers(samples_in_dimers)
+        Check_correctness=vmc.Check_dimers
+        print("Check_correctness",Check_correctness, file=f)
     
-    # Evaluate the loss function in AD mode
-    with tf.GradientTape() as tape:
-        logpsi = vmc.logpsi(samples)
+        # Evaluate the loss function in AD mode
+        with tf.GradientTape() as tape:
+            logpsi = vmc.logpsi(samples)
 
-        eloc = vmc.localenergy(samples_in_dimers)
-        print("eloc",eloc)
-        errors=vmc.number_of_errors(samples_in_dimers)
+            eloc = vmc.localenergy(samples_in_dimers)
+            print("eloc",eloc)
+            errors=vmc.number_of_errors(samples_in_dimers)
+
+            print("erros in each sample",errors, file=f)
+            print("erros av", tf.stop_gradient(tf.math.reduce_mean(errors)), file=f)
+#            errors=tf.math.multiply(50,errors)
+            errors_factor=tf.random.uniform(shape=(tf.shape(errors)),minval=50, maxval=51)
+            print("erros factor",errors_factor, file=f)
+            print("eloc", eloc, file=f)
+            eloc=tf.math.add(tf.math.multiply(errors_factor, errors), eloc)
+            print("c*errors+eloc",eloc, file=f)
+            Free_energy=tf.math.add(eloc, tf.math.scalar_mul(T, logpsi))
+            print("free energy", Free_energy, file=f)
+            Free_mean=tf.reduce_mean(Free_energy)
+            print("free energy mean", Free_mean, file=f)
+            loss = tf.reduce_mean(tf.multiply(logpsi,tf.stop_gradient(Free_energy-Free_mean)))
+            print("loss",loss, file=f)
+            print("#################################################################################################", file=f)
+    
+        # Compute the gradients
+        gradients = tape.gradient(loss, vmc.trainable_variables)
+    
+        # Update the parameters
+        vmc.optimizer.apply_gradients(zip(gradients, vmc.trainable_variables))
+    
+        energies = eloc.numpy()
+        free_energies= Free_energy.numpy()
+        bind_d_symmetry_breaking=Bind_d_symmetry_breaking.numpy()
+        bind_p_symmetry_breaking=Bind_p_symmetry_breaking.numpy()
+
+        avg_E = np.mean(energies)/float(N)
+        avg_F = np.mean(free_energies)/float(N)
+        var_E = np.var(energies)/float(N)
+        avg_error=tf.math.reduce_mean(errors).numpy()
+        #Save data in files 
+        np.savetxt(bdsb,np.atleast_1d(bind_d_symmetry_breaking))
+        logging.info("Epoch {}, bdsb saved".format(int(epoch.numpy())))
         
-        print(epoch, "erros in each sample",errors)
-        print(epoch,"erros av", tf.stop_gradient(tf.math.reduce_mean(errors)))
-#         print(n, "erros in each sample",errors, file=f)
-#         print(n,"erros av", tf.stop_gradient(tf.math.reduce_mean(errors)), file=f)
+        np.savetxt(bpsb,np.atleast_1d(bind_p_symmetry_breaking))
+        logging.info("Epoch {}, bdsb saved".format(int(epoch.numpy())))
         
-        errors=tf.math.multiply(1000,errors)
-        Free_energy=tf.math.add(eloc, tf.math.scalar_mul(T, logpsi))
-        Free_mean=tf.reduce_mean(Free_energy)
-        loss = tf.reduce_mean(tf.multiply(logpsi,tf.add(tf.stop_gradient(errors),tf.stop_gradient(Free_energy-Free_mean))))
+        np.savetxt(energy,np.atleast_1d(avg_E))
+        logging.info("Epoch {}, Energy saved".format(int(epoch.numpy())))
+        
+        np.savetxt(free,np.atleast_1d(avg_F))
+        logging.info("Epoch {}, Free saved".format(int(epoch.numpy())))
+        
+        np.savetxt(variance,np.atleast_1d(var_E))
+        logging.info("Epoch {}, Variance saved".format(int(epoch.numpy())))
 
-        print("loss",loss)
-#         print("loss",loss, file=f)
-    
-    # Compute the gradients
-    gradients = tape.gradient(loss, vmc.trainable_variables)
-    
-    # Update the parameters
-    vmc.optimizer.apply_gradients(zip(gradients, vmc.trainable_variables))
+        np.savetxt(Loss,np.atleast_1d(loss))
+        logging.info("Epoch {}, Variance saved".format(int(epoch.numpy())))
 
-    #Save model
-    path=checkpoint_manager.save()
-    logging.info("Epoch {}, Training state saved at {}".format(int(epoch.numpy()),path))
-    
-    energies = eloc.numpy()
-    free_energies= Free_energy.numpy()
-    avg_E = np.mean(energies, keepdims=True)/float(N)
-    avg_F = np.mean(free_energies, keepdims=True)/float(N)
-    var_E = np.var(energies, keepdims=True)/float(N)
-    
-    #Save energy, free energy and variance
+        np.savetxt(erro, np.atleast_1d(avg_error))
+        logging.info("Epoch {}, error saved".format(int(epoch.numpy())))
+        
+        #Save Check point 
+        path=checkpoint_manager.save()
+        logging.info("Epoch {}, Training state saved at {}".format(int(epoch.numpy()),path))
+         
+        epoch.assign_add(1)
+	#Print several samples
 
-    np.savetxt(energy,avg_E)
-    energy.close()
-    logging.info("Epoch {}, Energy saved".format(int(epoch.numpy())))
-    np.savetxt(free,avg_F)
-    logging.info("Epoch {}, Free saved".format(int(epoch.numpy())))
-    free.close()
-    logging.info("Epoch {}, Variance saved".format(int(epoch.numpy())))
-
-    np.savetxt(variance,var_E)
-    variance.close()  
-
-    epoch.assign_add(1)
+        print("samples", file=f)
+        count=0
+        for i in samples_in_dimers:
+            if count%2==0:
+                print(i, file=f)
+            count+=1
+        print("end of samples", file=f)
 
 global_rng_state = tf.random.experimental.get_global_generator().state
 checkpoint = tf.train.Checkpoint(epoch=epoch,optimizer=optimizer,vmc=vmc, global_rng_state=global_rng_state)
@@ -1121,10 +1203,13 @@ logging.info("Epoch {}, Training state saved at {}".format(int(epoch.numpy()),pa
 
 import torch as torch
 s=samples.numpy()
-print(s)
 sample_dominos=torch.tensor(s)
-print(sample_dominos)
-torch.save(sample_dominos, f'sampledominos_{Lx}_{Ly}_{ns}.pt' )
+torch.save(sample_dominos, f'samples_in_dominos_nh={nh}_size={Lx}x{Ly}x{ns}_T={T}_epoch={epoch.numpy()-1}.pt' )
+
+s=samples_in_dimers.numpy()
+sample_dimers=torch.tensor(s)
+torch.save(sample_dimers, f'samples_in_dimers_nh={nh}_size={Lx}x{Ly}x{ns}_T={T}_epoch={epoch.numpy()-1}.pt' )
+
     
 
 
