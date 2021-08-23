@@ -1,8 +1,10 @@
 {
   "ExpandedNodes": [
     "",
+    "\\dimmers_without_constrains",
+    "\\dominos",
     "\\Sampling by Algorithms"
   ],
-  "SelectedNode": "\\Sampling by Algorithms\\Testing dimers sample.py",
+  "SelectedNode": "\\Sampling by Algorithms\\Testing dominos sample.py",
   "PreviewInSolutionExplorer": false
 }
